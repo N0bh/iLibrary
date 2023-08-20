@@ -1,0 +1,681 @@
+Form1:
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO.Ports;
+
+namespace Smart_Library_Return_and_Borrow_System
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            timer1.Enabled = true;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            DATE_TIME.Text = DateTime.Now.ToString("dd MM yyyy / hh:mm:ss");
+        }
+
+        private void Admin_bttn_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            Form2 f2 = new Form2();
+            f2.ShowDialog();
+        }
+
+        private void User_bttn_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            Form3 f3 = new Form3();
+            f3.ShowDialog();
+        }
+    }
+}
+
+Form 2:
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Ubiety.Dns.Core.Records;
+using System.IO.Ports;
+using Org.BouncyCastle.Utilities.Collections;
+using System.IO;
+using AForge.Video;
+using AForge.Video.DirectShow;
+
+namespace Smart_Library_Return_and_Borrow_System
+{
+    public partial class Form2 : Form
+    {
+        SqlConnection con = new SqlConnection(@"Data Source = LAPTOP-OM4F94C6\SQLEXPRESS;Initial Catalog = ""iLibrary UserRegs""; Integrated Security=True");
+        SqlConnection con1 = new SqlConnection(@"Data Source = LAPTOP-OM4F94C6\SQLEXPRESS;Initial Catalog = ""books listing""; Integrated Security=true");
+        SqlCommand cmd;
+        SqlDataAdapter adpt;
+        DataTable dt;
+
+        private Bitmap capturedImage;
+
+        public Form2()
+        {
+            InitializeComponent();
+        }
+        FilterInfoCollection fic;
+        VideoCaptureDevice vcd;
+
+        private void Form2_Load(object sender, EventArgs e)
+        {
+            timer2.Enabled = true;
+            showdata();
+            showdata1();
+
+            fic = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            foreach (FilterInfo filterInfo in fic)
+                cboDevice.Items.Add(filterInfo.Name);
+            cboDevice.SelectedIndex = 0;
+            vcd = new VideoCaptureDevice();
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            DATE_TIME2.Text = DateTime.Now.ToString("dd MM yyyy / hh:mm:ss");
+        }
+
+        private void Home_bttn1_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            Form1 f1 = new Form1();
+            f1.ShowDialog();
+        }
+
+        private void uploadImage_Click_1(object sender, EventArgs e)
+        {
+            CAMPANEL.Visible = true;
+            
+            vcd = new VideoCaptureDevice(fic[cboDevice.SelectedIndex].MonikerString);
+            vcd.NewFrame += VideoCaptureDevice_NewFrame;
+            vcd.Start();
+        }
+        public void showdata()
+        {
+            adpt = new SqlDataAdapter("Select * from userregs", con);
+            dt = new DataTable();
+            dt.Clear();
+            adpt.Fill(dt);
+            dataGridView1.DataSource = dt;
+            dataGridView1.MultiSelect = true;
+        }
+
+        private void Save_bttn_Click(object sender, EventArgs e)
+        {
+            byte[] imageData;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                UserPic.Image.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                imageData = ms.ToArray();
+            }
+            con.Open();
+            string sqlQuery = "INSERT INTO userregs([Username],[Contact],[Sex],[ID],[TagUID],[Course /Department],[Picture])VALUES('" + txtName.Text + "', '" + txtContact.Text + "', '" + cmbSex.SelectedItem.ToString() + "', '" + txtID.Text + "', '" + txtUID.Text + "', '" + cmbDept.SelectedItem.ToString() + "',@images) ";
+            SqlCommand cmd = new SqlCommand(sqlQuery, con);
+            cmd.Parameters.Add(new SqlParameter("@images", imageData));
+            int N = cmd.ExecuteNonQuery();
+            con.Close();
+            MessageBox.Show(N.ToString() + "Register Successfully");
+            showdata();
+
+            txtName.Text = "";
+            txtContact.Text = "";
+            cmbSex.Text = "";   
+            txtID.Text = "";
+            txtUID.Text = "";
+            cmbDept.Text = "";
+            UserPic.Image = null;
+        }
+        private void delete_bttnUsers_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i <= dataGridView1.SelectedRows.Count - 1; i++)
+            {
+                SqlCommand cmd = new SqlCommand("delete from userregs Where Username = @Username", con);
+                cmd.Parameters.AddWithValue("Username", dataGridView1.SelectedRows[i].Cells[0].Value.ToString());
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            showdata();
+            MessageBox.Show("Data deleted sucessfully!");
+        }
+        public void showdata1()
+        {
+            adpt = new SqlDataAdapter("Select * from books listing", con1);
+            dt = new DataTable();
+            dt.Clear();
+            adpt.Fill(dt);
+            dataGridView2.DataSource = dt;
+            dataGridView2.MultiSelect = true;
+        }
+
+        private void save_bttnBooks_Click(object sender, EventArgs e)
+        {
+            SqlConnection con1 = new SqlConnection("Data Source=LAPTOP-OM4F94C6\\SQLEXPRESS;Initial Catalog=\"books listing\";Integrated Security=True");
+            SqlCommand cmd = new SqlCommand(@"INSERT INTO[dbo].[books]
+
+           ([Title]
+           ,[Author]
+           ,[Genre]
+           ,[BookTag])
+    VALUES  
+            ('" + textTitle.Text + "', '" + textAuthor.Text + "', '" + cmbGenre.SelectedItem.ToString() + "', '" + textBookTag.Text + "')", con1);
+            con1.Open();
+            cmd.ExecuteNonQuery();
+            con1.Close();
+            MessageBox.Show("Register Successfully");
+            showdata1();
+
+            textTitle.Text = "";
+            textAuthor.Text = "";
+            cmbGenre.Text = "";
+            textBookTag.Text = "";
+        }
+
+        private void delete_bttn_Books_Click(object sender, EventArgs e)
+        {
+            for (int x = 0; x <= dataGridView2.SelectedRows.Count - 1; x++)
+            {
+                SqlCommand cmd = new SqlCommand("delete from books Where Title = @Title", con1);
+                cmd.Parameters.AddWithValue("Title", dataGridView2.SelectedRows[x].Cells[0].Value.ToString());
+                con1.Open();
+                cmd.ExecuteNonQuery();
+                con1.Close();
+            }
+            showdata1();
+            MessageBox.Show("Data deleted sucessfully!");
+        }
+        private void txtID_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            TextBox textBox = (TextBox)sender;
+
+            if (txtID.Text.Length >= 11 && e.KeyChar != '\b')
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void bttnHistoryadmin_Click(object sender, EventArgs e)
+        {
+            panel3.Visible = !panel3.Visible;
+        }
+
+        private void PicCapture_Click(object sender, EventArgs e)
+        {
+            Image capturedImage = runningpic.Image;
+            UserPic.Image = capturedImage;
+
+            CAMPANEL.Visible = false;
+        }
+        private void VideoCaptureDevice_NewFrame(object sender, NewFrameEventArgs eventArgs)
+        {
+            runningpic.Image = (Bitmap)eventArgs.Frame.Clone();
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+            CAMPANEL.Visible = false;
+        }
+    }
+ }
+              
+                            
+Form 3:
+
+using MySql.Data.MySqlClient;
+using MySqlX.XDevAPI;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Xml.Linq;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using System.Data.SqlTypes;
+using System.IO;
+using System.IO.Ports;
+using System.Net.Mail;
+using System.Net;
+
+namespace Smart_Library_Return_and_Borrow_System
+{
+    public partial class Form3 : Form
+    {
+        SqlConnection con = new SqlConnection(@"Data Source=LAPTOP-OM4F94C6\SQLEXPRESS;Initial Catalog=""iLibrary UserRegs"";Integrated Security=True");
+        SqlConnection con1 = new SqlConnection(@"Data Source=LAPTOP-OM4F94C6\SQLEXPRESS;Initial Catalog=""books listing"";Integrated Security=True");
+        SqlConnection con2 = new SqlConnection(@"Data Source=LAPTOP-OM4F94C6\SQLEXPRESS;Initial Catalog=""historyRETURN"";Integrated Security=True");
+        SqlConnection con3 = new SqlConnection(@"Data Source=LAPTOP-OM4F94C6\SQLEXPRESS;Initial Catalog=""historyBORROW"";Integrated Security=True");
+        SqlCommand cmd;
+        private SqlDataReader dr;
+        SqlDataAdapter adpt;
+        DataTable dt;
+
+        public Form3()
+        {
+            InitializeComponent();
+            serialPort1.Open();
+            timer1.Enabled = true;
+            showdataR();
+            showdataB();
+        }
+        string imgLocation = "";
+
+        private void home_bttn3_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            Form1 f1 = new Form1();
+            f1.ShowDialog();
+        }
+        private void brrw_button_Click(object sender, EventArgs e)
+        {
+            panelReturn.Visible = false;
+            panelBorrow.Visible = true;
+            brrwName.Text = textName.Text;
+            brrwCon.Text = textContact.Text;
+            brrwSex.Text = textSex.Text;
+            brrwID.Text = textID.Text;
+            brrwDept.Text = textDept.Text;
+            picBrrw.Image = userpicshow.Image;
+            brrwIDTag.Text = RfidTag.Text;
+            brrwDate.Text = DateTime.Now.ToString();
+        }
+
+        private void Return_bttn_Click(object sender, EventArgs e)
+        {
+            paneluser.Visible = false;
+            rtrnName.Text = textName.Text;
+            rtrnCon.Text = textContact.Text;
+            rtrnSex.Text = textSex.Text;
+            rtrnID.Text = textID.Text;
+            rtrnDept.Text = textDept.Text;
+            picRtrn.Image = userpicshow.Image;
+            rtrnIDTag.Text = RfidTag.Text;
+            rtrnDate.Text = DateTime.Now.ToString();
+        }
+        private void Form3_Load(object sender, EventArgs e)
+        {
+
+        }
+        private void HOMEbttn_user_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            Form1 f1 = new Form1();
+            f1.ShowDialog();
+        }
+
+        private void RfidTag_TextChanged_1(object sender, EventArgs e)
+        {
+            if (RfidTag.Text.Length >= 10)
+            {
+                con.Open();
+                cmd = new SqlCommand("select * from userregs Where TagUID = '" + RfidTag.Text + "'", con);
+                dr = cmd.ExecuteReader();
+                dr.Read();
+                if (dr.HasRows)
+                {
+                    textName.Text = dr["Username"].ToString();
+                    textContact.Text = dr["Contact"].ToString();
+                    textSex.Text = dr["Sex"].ToString();
+                    textID.Text = dr["ID"].ToString();
+                    textDept.Text = dr["Course /Department"].ToString();
+                    RfidTag.Text = dr["TagUID"].ToString();
+                    byte[] ImageData = (byte[])dr["Picture"];
+                    var ms = new MemoryStream(ImageData);
+                    userpicshow.Image = Image.FromStream(ms);
+                    con.Close();
+                    serialPort1.WriteLine("A");
+                }
+                else
+                {
+                    textName.Text = "";
+                    textContact.Text = "";
+                    textSex.Text = "";
+                    textID.Text = "";
+                    textDept.Text = "";
+                    RfidTag.Text = "";
+                    userpicshow.Image = null;
+                    serialPort1.WriteLine("B");
+                }
+                con.Close();
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            serialPort1.Close();
+            this.Hide();
+            Form1 f1 = new Form1();
+            f1.ShowDialog();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            date_time3.Text = DateTime.Now.ToString("dd MM yyyy / hh:mm:ss");
+        }
+
+        private void rtrnBTag_TextChanged(object sender, EventArgs e)
+        {
+            if (rtrnBTag.Text.Length >= 10)
+            {
+                con1.Open();
+                cmd = new SqlCommand("select * from books Where BookTag = '" + rtrnBTag.Text + "'", con1);
+                dr = cmd.ExecuteReader();
+                dr.Read();
+                if (dr.HasRows)
+                {
+                    rtrnTitle.Text = dr["Title"].ToString();
+                    rtrnAuthor.Text = dr["Author"].ToString();
+                    rtrnGenre.Text = dr["Genre"].ToString();
+                    rtrnBTag.Text = dr["BookTag"].ToString();
+                    con1.Close();
+                    serialPort1.WriteLine("C");
+                }
+                else
+                {
+                    rtrnTitle.Text = "";
+                    rtrnAuthor.Text = "";
+                    rtrnGenre.Text = "";
+                    rtrnBTag.Text = "";
+                    serialPort1.WriteLine("D");
+                }
+                con1.Close();
+            }
+        }
+
+        private void confirmRtrn_Click(object sender, EventArgs e)
+        {
+            con2.Open();
+            using (SqlCommand cmd = new SqlCommand("INSERT INTO returnhistory ([Name], [Contact], [Sex], [ID], [Department], [Picture], [Title], [Author], [Genre], [BookTag], [IDTag], [DateTime]) VALUES (@Name, @Contact, @Sex, @ID, @Department, @Picture, @Title, @Author, @Genre, @BookTag, @IDTag, @DateTime)", con2))
+            {
+                cmd.Parameters.AddWithValue("@Name", rtrnName.Text);
+                cmd.Parameters.AddWithValue("@Contact", rtrnCon.Text);
+                cmd.Parameters.AddWithValue("@Sex", rtrnSex.Text);
+                cmd.Parameters.AddWithValue("@ID", rtrnID.Text);
+                cmd.Parameters.AddWithValue("@Department", rtrnDept.Text);
+
+                Image img = picRtrn.Image;
+                MemoryStream ms = new MemoryStream();
+                img.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                byte[] imageBytes = ms.ToArray();
+                SqlParameter param = new SqlParameter("@Picture", SqlDbType.VarBinary, imageBytes.Length);
+                param.Value = imageBytes;
+                cmd.Parameters.Add(param);
+
+                cmd.Parameters.AddWithValue("@Title", rtrnTitle.Text);
+                cmd.Parameters.AddWithValue("@Author", rtrnAuthor.Text);
+                cmd.Parameters.AddWithValue("@Genre", rtrnGenre.Text);
+                cmd.Parameters.AddWithValue("@BookTag", rtrnBTag.Text);
+                cmd.Parameters.AddWithValue("@IDTag", rtrnIDTag.Text);
+                cmd.Parameters.AddWithValue("@DateTime", rtrnDate.Text);
+
+                int result = cmd.ExecuteNonQuery();
+                MessageBox.Show("Thank you HAVE A NICE DAY!! :)");
+                showdataR();
+                serialPort1.WriteLine("E");
+                {
+                    string fromEmail = "vhonnymrls@gmail.com";
+                    string toEmail = textContact.Text;
+                    string subject = "Hello we're ERVA!";
+                    string body = "We would like to inform that you have borrowed the book " + rtrnTitle.Text + ", the deadline for borrowing will be at 7 days from now. Thank you!";
+
+
+                    try
+                    {
+                        using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
+                        {
+                            smtpClient.EnableSsl = true;
+                            smtpClient.Credentials = new NetworkCredential("eleknhl@gmail.com", "adzftgfpjsepyjwo");
+
+                            using (MailMessage mailMessage = new MailMessage(fromEmail, toEmail, subject, body))
+                            {
+                                smtpClient.Send(mailMessage);
+                                MessageBox.Show("Email sent successfully!");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error sending email: " + ex.Message);
+                    }
+                }
+            }
+            con2.Close();
+            paneluser.Visible = true;
+            textName.Text = "";
+            textContact.Text = "";
+            textSex.Text = "";
+            textID.Text = "";
+            textDept.Text = "";
+            RfidTag.Text = "";
+            userpicshow.Image = null;
+            rtrnName.Text = "";
+            rtrnCon.Text = "";
+            rtrnSex.Text = "";
+            rtrnID.Text = "";
+            rtrnDept.Text = "";
+            rtrnTitle.Text = "";
+            rtrnAuthor.Text = "";
+            rtrnGenre.Text = "";
+            rtrnIDTag.Text = "";
+            rtrnDate.Text = "";
+        }
+
+        private void cancelRtrn_Click(object sender, EventArgs e)
+        {
+            paneluser.Visible = true;
+            textName.Text = "";
+            textContact.Text = "";
+            textSex.Text = "";
+            textID.Text = "";
+            textDept.Text = "";
+            RfidTag.Text = "";
+            userpicshow.Image = null;
+            rtrnTitle.Text = "";
+            rtrnAuthor.Text = "";
+            rtrnGenre.Text = "";
+            rtrnBTag.Text = "";
+        }
+        private void brrwBTag_TextChanged(object sender, EventArgs e)
+        {
+            if (brrwBTag.Text.Length >= 10)
+            {
+                con1.Open();
+                cmd = new SqlCommand("select * from books Where BookTag = '" + brrwBTag.Text + "'", con1);
+                dr = cmd.ExecuteReader();
+                dr.Read();
+                if (dr.HasRows)
+                {
+                    brrwTitle.Text = dr["Title"].ToString();
+                    brrwAuthor.Text = dr["Author"].ToString();
+                    brrwGenre.Text = dr["Genre"].ToString();
+                    brrwBTag.Text = dr["BookTag"].ToString();
+                    con1.Close();
+                    serialPort1.WriteLine("C");
+                }
+                else
+                {
+                    brrwTitle.Text = "";
+                    brrwAuthor.Text = "";
+                    brrwGenre.Text = "";
+                    brrwBTag.Text = "";
+                    serialPort1.WriteLine("D");
+                }
+                con1.Close();
+            }
+        }
+
+        private void confirmBrrw_Click(object sender, EventArgs e)
+        {
+            con3.Open();
+            using (SqlCommand cmd = new SqlCommand("INSERT INTO borrowhistory ([Name], [Contact], [Sex], [ID], [Department], [Picture], [Title], [Author], [Genre], [BookTag], [IDTag], [DateTime]) VALUES (@Name, @Contact, @Sex, @ID, @Department, @Picture, @Title, @Author, @Genre, @BookTag, @IDTag, @DateTime)", con3))
+            {
+                cmd.Parameters.AddWithValue("@Name", brrwName.Text);
+                cmd.Parameters.AddWithValue("@Contact", brrwCon.Text);
+                cmd.Parameters.AddWithValue("@Sex", brrwSex.Text);
+                cmd.Parameters.AddWithValue("@ID", brrwID.Text);
+                cmd.Parameters.AddWithValue("@Department", brrwDept.Text);
+
+                Image img = picBrrw.Image;
+                MemoryStream ms = new MemoryStream();
+                img.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                byte[] imageBytes = ms.ToArray();
+                SqlParameter param = new SqlParameter("@Picture", SqlDbType.VarBinary, imageBytes.Length);
+                param.Value = imageBytes;
+                cmd.Parameters.Add(param);
+
+                cmd.Parameters.AddWithValue("@Title", brrwTitle.Text);
+                cmd.Parameters.AddWithValue("@Author", brrwAuthor.Text);
+                cmd.Parameters.AddWithValue("@Genre", brrwGenre.Text);
+                cmd.Parameters.AddWithValue("@BookTag", brrwBTag.Text);
+                cmd.Parameters.AddWithValue("@IDTag", brrwIDTag.Text);
+                cmd.Parameters.AddWithValue("@DateTime", brrwDate.Text);
+                int result = cmd.ExecuteNonQuery();
+                MessageBox.Show("Thank you HAVE A NICE DAY!! :)");
+                showdataB();
+                serialPort1.WriteLine("F");
+            }
+
+            string fromEmail = "vhonnymrls@gmail.com";
+            string toEmail = textContact.Text;
+            string subject = "Hello we're ERVA!";
+            string body = "We would like to thank you for returning the book " + brrwTitle.Text + ". We hope to see you in more further transactions.";
+            try
+            {
+                using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
+                {
+                    smtpClient.EnableSsl = true;
+                    smtpClient.Credentials = new NetworkCredential("eleknhl@gmail.com", "adzftgfpjsepyjwo");
+
+                    using (MailMessage mailMessage = new MailMessage(fromEmail, toEmail, subject, body))
+                    {
+                        smtpClient.Send(mailMessage);
+                        MessageBox.Show("Email sent successfully!");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error sending email: " + ex.Message);
+            }
+                con3.Close();
+                panelReturn.Visible = true;
+                paneluser.Visible = true;
+                textName.Text = "";
+                textContact.Text = "";
+                textSex.Text = "";
+                textID.Text = "";
+                textDept.Text = "";
+                RfidTag.Text = "";
+                userpicshow.Image = null;
+                brrwName.Text = "";
+                brrwCon.Text = "";
+                brrwSex.Text = "";
+                brrwID.Text = "";
+                brrwDept.Text = "";
+                brrwTitle.Text = "";
+                brrwAuthor.Text = "";
+                brrwGenre.Text = "";
+                brrwBTag.Text = "";
+                picBrrw.Image = null;
+                brrwIDTag.Text = "";
+        }
+        private void cancelBrrw_Click(object sender, EventArgs e)
+        {
+            panelReturn.Visible = true;
+            paneluser.Visible = true;
+            textName.Text = "";
+            textContact.Text = "";
+            textSex.Text = "";
+            textID.Text = "";
+            textDept.Text = "";
+            RfidTag.Text = "";
+            userpicshow.Image = null;
+            brrwTitle.Text = "";
+            brrwAuthor.Text = "";
+            brrwGenre.Text = "";
+            brrwBTag.Text = "";
+        }
+
+        private void bttnHistory_Click(object sender, EventArgs e)
+        {
+            panelhistory.Visible = !panelhistory.Visible;
+        }
+        public void showdataR() 
+        {
+            adpt = new SqlDataAdapter("Select * from returnhistory", con2);
+            dt = new DataTable();
+            dt.Clear();
+            adpt.Fill(dt);
+            dataGridViewRtrn.DataSource = dt;
+            dataGridViewRtrn.MultiSelect = true;
+        }
+        public void showdataB() 
+        {
+            adpt = new SqlDataAdapter("Select * from borrowhistory", con3);
+            dt = new DataTable();
+            dt.Clear();
+            adpt.Fill(dt);
+            dataGridViewBrrw.DataSource = dt;
+            dataGridViewBrrw.MultiSelect = true;
+        }
+
+        private void Delete_rtrnhistory_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i <= dataGridViewRtrn.SelectedRows.Count - 1; i++)
+            {
+                SqlCommand cmd = new SqlCommand("delete from returnhistory Where Name = @Name", con2);
+                cmd.Parameters.AddWithValue("Name", dataGridViewRtrn.SelectedRows[i].Cells[0].Value.ToString());
+                con2.Open();
+                cmd.ExecuteNonQuery();
+                con2.Close();
+            }
+                showdataR();
+                MessageBox.Show("Data deleted sucessfully!");
+        }
+
+        private void Delete_brrwhistory_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i <= dataGridViewBrrw.SelectedRows.Count - 1; i++)
+            {
+                SqlCommand cmd = new SqlCommand("delete from borrowhistory Where Name = @Name", con3);
+                cmd.Parameters.AddWithValue("Name", dataGridViewBrrw.SelectedRows[i].Cells[0].Value.ToString());
+                con3.Open();
+                cmd.ExecuteNonQuery();
+                con3.Close();
+            }
+                showdataB();
+                MessageBox.Show("Data deleted sucessfully!");
+        }
+    }
+}
+        
