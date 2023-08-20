@@ -1,0 +1,134 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+int LedG = 9;
+int LedR = 8;
+
+void setup() 
+{
+  Serial.begin(9600);
+  pinMode(LedG, OUTPUT);
+  pinMode(LedR, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(5, 0);
+  lcd.print("SCAN");
+  lcd.setCursor(5, 1);
+  lcd.print("HERE");
+}
+
+void loop() 
+{
+  if(Serial.available()){
+  
+    char data = Serial.read();
+
+    switch(data){
+      
+     case 'A':
+        lcd.clear();
+        digitalWrite(LedG, 1);
+        digitalWrite(LedR, 0); 
+        lcd.setCursor(4, 0);
+        lcd.print("ID IS");
+        lcd.setCursor(2, 1);
+        lcd.print("REGISTERED");
+        delay(750);
+        lcd.clear();
+        digitalWrite(LedR, 0); 
+        digitalWrite(LedG, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("SCAN");
+        lcd.setCursor(5, 1);
+        lcd.print("HERE");
+        break;
+     case 'B':
+        lcd.clear();
+        digitalWrite(LedR, 1); 
+        digitalWrite(LedG, 0);
+        lcd.setCursor(2, 0);
+        lcd.print("ID IS NOT");
+        lcd.setCursor(2, 1);
+        lcd.print("REGISTERED");
+        delay(750);
+        lcd.clear();
+        digitalWrite(LedR, 0); 
+        digitalWrite(LedG, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("SCAN");
+        lcd.setCursor(5, 1);
+        lcd.print("HERE");
+        break;
+     case 'C':
+        lcd.clear();
+        digitalWrite(LedG, 1);
+        digitalWrite(LedR, 0); 
+        lcd.setCursor(3, 0);
+        lcd.print("BOOK IS");
+        lcd.setCursor(2, 1);
+        lcd.print("REGISTERED");
+        delay(750);
+        lcd.clear();
+        digitalWrite(LedR, 0); 
+        digitalWrite(LedG, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("SCAN");
+        lcd.setCursor(5, 1);
+        lcd.print("HERE");
+        break;
+      case 'D':
+        lcd.clear();
+        digitalWrite(LedR, 1); 
+        digitalWrite(LedG, 0);
+        lcd.setCursor(2, 0);
+        lcd.print("BOOK IS NOT");
+        lcd.setCursor(2, 1);
+        lcd.print("REGISTERED");
+        delay(750);
+        lcd.clear();
+        digitalWrite(LedR, 0); 
+        digitalWrite(LedG, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("SCAN");
+        lcd.setCursor(5, 1);
+        lcd.print("HERE");
+        break;
+      case 'E':
+        lcd.clear();
+        digitalWrite(LedG, 1); 
+        digitalWrite(LedR, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("BOOK");
+        lcd.setCursor(3, 1);
+        lcd.print("RETURNED");
+        delay(2000);
+        lcd.clear();
+        digitalWrite(LedG, 0); 
+        digitalWrite(LedR, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("SCAN");
+        lcd.setCursor(5, 1);
+        lcd.print("HERE");
+        break;
+      case 'F':
+        lcd.clear();
+        digitalWrite(LedG, 1); 
+        digitalWrite(LedR, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("BOOK");
+        lcd.setCursor(3, 1);
+        lcd.print("BORROWED");
+        delay(750);
+        lcd.clear();
+        digitalWrite(LedG, 0); 
+        digitalWrite(LedR, 0);
+        lcd.setCursor(5, 0);
+        lcd.print("SCAN");
+        lcd.setCursor(5, 1);
+        lcd.print("HERE");
+        break;
+    }
+  }
+}
